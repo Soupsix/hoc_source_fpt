@@ -68,7 +68,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               Bạn muốn học gì hôm nay?
             </h1>
             <p className="text-slate-600 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
-              Khám phá các bộ mã đề học tập đã xuất bản theo môn học và kỳ học, luyện tập ghi nhớ qua Flashcard hoặc thi trắc nghiệm.
+              Học source đê, học source đi nèo ^:^
             </p>
 
             {/* Search Form */}
@@ -199,7 +199,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-6 mt-12 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4">
-          <p>© 2026 Flashcard Learning Platform. All rights reserved.</p>
+          <p>Web của soupsix mới học đến kỳ 8 nên chỉ có chừng này source thôi, thông cảm :#</p>
         </div>
       </footer>
     </div>
