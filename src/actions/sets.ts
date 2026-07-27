@@ -24,6 +24,8 @@ export async function createQuestionSetAction(data: QuestionSetFormValues) {
         code: validatedData.code,
         title: validatedData.title,
         description: validatedData.description || null,
+        subject: validatedData.subject,
+        semester: validatedData.semester,
         isPublished: validatedData.isPublished ?? false,
       },
     });
@@ -68,6 +70,8 @@ export async function updateQuestionSetAction(id: string, data: QuestionSetFormV
         code: validatedData.code,
         title: validatedData.title,
         description: validatedData.description || null,
+        subject: validatedData.subject,
+        semester: validatedData.semester,
         isPublished: validatedData.isPublished,
       },
     });
@@ -122,6 +126,8 @@ export async function getQuestionSets(query?: string) {
             OR: [
               { code: { contains: search, mode: "insensitive" } },
               { title: { contains: search, mode: "insensitive" } },
+              { subject: { contains: search, mode: "insensitive" } },
+              { semester: { contains: search, mode: "insensitive" } },
             ],
           }
         : undefined,

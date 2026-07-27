@@ -18,6 +18,12 @@ export const questionSetSchema = z.object({
     .max(1000, { message: "Mô tả không được vượt quá 1000 ký tự." })
     .optional()
     .nullable(),
+  subject: z
+    .string()
+    .max(100, { message: "Môn học không được vượt quá 100 ký tự." }),
+  semester: z
+    .string()
+    .max(50, { message: "Kỳ học không được vượt quá 50 ký tự." }),
   isPublished: z.boolean(),
 });
 

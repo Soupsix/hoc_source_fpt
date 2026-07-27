@@ -18,12 +18,16 @@ model QuestionSet {
   code        String     @unique
   title       String
   description String?
+  subject     String     @default("Chưa xếp")
+  semester    String     @default("Chưa xếp")
   isPublished Boolean    @default(false)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   questions   Question[]
 
   @@index([code])
+  @@index([subject])
+  @@index([semester])
 }
 
 model Question {

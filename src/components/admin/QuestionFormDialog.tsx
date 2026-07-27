@@ -6,8 +6,9 @@ import { createQuestionAction, updateQuestionAction } from "@/actions/questions"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertCircle, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, Plus, Trash2, Sparkles, Zap } from "lucide-react";
 import { QuestionType } from "@/types/question";
+import { parseQuickQuestion } from "@/lib/utils";
 
 export interface QuestionEditData {
   id?: string;
@@ -43,10 +44,41 @@ export function QuestionFormDialog({
       : ["", ""]
   );
   const [explanation, setExplanation] = useState(initialData?.explanation || "");
+  const [quickInput, setQuickInput] = useState("");
+  const [parseSuccessMsg, setParseSuccessMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleQuickParse = () => {
+    if (!quickInput.trim()) return;
+    const { question: parsedQuestion, options: parsedOptions } = parseQuickQuestion(quickInput);
+
+    if (!parsedQuestion && parsedOptions.length === 0) {
+      setError("Không thể nhận diện nội dung câu hỏi hoặc các lựa chọn.");
+      return;
+    }
+
+    if (parsedQuestion) {
+      setQuestion(parsedQuestion);
+    }
+
+    if (parsedOptions.length > 0) {
+      setOptions(parsedOptions);
+      if (type === "FLASHCARD") {
+        setType("SINGLE_CHOICE");
+      }
+    }
+
+    setError(null);
+    setParseSuccessMsg(
+      `Đã tách tự động: ${parsedQuestion ? "Nội dung câu hỏi" : ""} ${
+        parsedOptions.length > 0 ? `và ${parsedOptions.length} phương án` : ""
+      }`
+    );
+    setQuickInput("");
+  };
 
   const handleAddOption = () => {
     setOptions((prev) => [...prev, ""]);
@@ -148,6 +180,43 @@ export function QuestionFormDialog({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Quick Import Parser Box */}
+          <div className="p-3.5 bg-indigo-50/70 border border-indigo-100 rounded-xl space-y-2">
+            <div className="flex items-center justify-between">
+              <label htmlFor="quickImport" className="text-xs font-bold text-indigo-900 flex items-center gap-1.5 cursor-pointer">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                Dán nhanh đoạn văn bản (Tự động tách câu hỏi &amp; phương án A, B, C, D)
+              </label>
+            </div>
+            <Textarea
+              id="quickImport"
+              placeholder="Ví dụ: Which API platform is used for capturing user's location data? A. LocationPicker B. Geolocation C. Location D. Picker"
+              rows={2}
+              value={quickInput}
+              onChange={(e) => {
+                setQuickInput(e.target.value);
+                setParseSuccessMsg(null);
+              }}
+              className="bg-white text-xs"
+            />
+            <div className="flex items-center justify-between pt-0.5">
+              <span className="text-xs text-emerald-600 font-semibold truncate">
+                {parseSuccessMsg && `✓ ${parseSuccessMsg}`}
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleQuickParse}
+                disabled={!quickInput.trim()}
+                className="text-xs gap-1.5 bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 shrink-0 ml-auto"
+              >
+                <Zap className="w-3.5 h-3.5 fill-current" />
+                Tách nhanh
+              </Button>
+            </div>
+          </div>
+
+          {/* Question Type Selection */}
           {/* Question Type Selection */}
           <div>
             <label className="block text-xs font-semibold uppercase text-slate-500 mb-1.5">

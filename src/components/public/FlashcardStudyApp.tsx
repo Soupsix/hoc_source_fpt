@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { formatOptionText, parseOptionsArray } from "@/lib/utils";
+import { formatOptionText, parseOptionsArray, resolveAnswer, isCorrectAnswer } from "@/lib/utils";
 import {
   ArrowLeft,
   RotateCw,
@@ -30,36 +30,6 @@ interface QuestionItem {
 interface FlashcardStudyAppProps {
   setInfo: { code: string; title: string };
   questions: QuestionItem[];
-}
-
-// Resolve answer letter "A" → actual option text
-// Also handles answers like "A. some text" by stripping the prefix
-function resolveAnswer(raw: string, options: string[]): string {
-  const t = raw.trim();
-  
-  if (t.length === 1) {
-    const idx = t.toUpperCase().charCodeAt(0) - 65;
-    if (idx >= 0 && idx < options.length) return formatOptionText(options[idx]);
-  }
-  
-  // Exact match first
-  const exactMatch = options.find(o => formatOptionText(o).trim().toLowerCase() === t.toLowerCase());
-  if (exactMatch) return formatOptionText(exactMatch);
-  
-  // Try stripping prefix like "A. ", "B) ", "C - " from the raw answer
-  const prefixMatch = t.match(/^[A-Z][.\-:)\]]\s+(.*)/i);
-  const strippedRaw = prefixMatch ? prefixMatch[1].trim().toLowerCase() : t.toLowerCase();
-  
-  // Try loose match against options (with or without option prefix)
-  const looseMatch = options.find(o => {
-    const optText = formatOptionText(o).trim().toLowerCase();
-    const strippedOptText = optText.match(/^[A-Z][.\-:)\]]\s+(.*)/i)?.[1].trim() || optText;
-    return strippedOptText === strippedRaw || optText === strippedRaw || strippedOptText === t.toLowerCase();
-  });
-  
-  if (looseMatch) return formatOptionText(looseMatch);
-
-  return t;
 }
 
 function questionType(options: string[]): "FLASHCARD" | "SINGLE" | "MULTI" {
@@ -190,15 +160,19 @@ export function FlashcardStudyApp({ setInfo, questions }: FlashcardStudyAppProps
       }`;
     }
     // After confirm
-    const corrects = correctParts.map((p) =>
-      resolveAnswer(p, parsedOptions).toLowerCase()
+    const isThisCorrect = isCorrectAnswer(
+      { type: isMulti ? "MULTIPLE_CHOICE" : "SINGLE_CHOICE", answer: correctAnswerRaw },
+      optionStr,
+      parsedOptions
     );
-    const isThisCorrect = corrects.includes(optionStr.toLowerCase());
+
     if (isMulti) {
-      const selected = (
-        Array.isArray(userAnswers[currentQ.id]) ? userAnswers[currentQ.id] as string[] : []
-      ).map((s) => s.toLowerCase());
-      const isThisSelected = selected.includes(optionStr.toLowerCase());
+      const selected = Array.isArray(userAnswers[currentQ.id])
+        ? (userAnswers[currentQ.id] as string[])
+        : [];
+      const isThisSelected = selected.some((s) =>
+        isCorrectAnswer({ type: "SINGLE_CHOICE", answer: s }, optionStr, parsedOptions)
+      );
       if (isThisCorrect) return `${base} bg-emerald-600/20 border-emerald-500 text-emerald-200`;
       if (isThisSelected && !isThisCorrect)
         return `${base} bg-red-600/20 border-red-500 text-red-200`;
@@ -206,10 +180,15 @@ export function FlashcardStudyApp({ setInfo, questions }: FlashcardStudyAppProps
     }
     // single
     const userStr = typeof userAnswers[currentQ.id] === "string"
-      ? (userAnswers[currentQ.id] as string).toLowerCase()
+      ? (userAnswers[currentQ.id] as string)
       : "";
+    const isThisSelected = isCorrectAnswer(
+      { type: "SINGLE_CHOICE", answer: userStr },
+      optionStr,
+      parsedOptions
+    );
     if (isThisCorrect) return `${base} bg-emerald-600/20 border-emerald-500 text-emerald-200`;
-    if (userStr === optionStr.toLowerCase() && !isThisCorrect)
+    if (isThisSelected && !isThisCorrect)
       return `${base} bg-red-600/20 border-red-500 text-red-200`;
     return `${base} bg-slate-950/60 border-slate-800 text-slate-500`;
   };
@@ -228,20 +207,21 @@ export function FlashcardStudyApp({ setInfo, questions }: FlashcardStudyAppProps
       }
       return null;
     }
-    const corrects = correctParts.map((p) =>
-      resolveAnswer(p, parsedOptions).toLowerCase()
+    const isThisCorrect = isCorrectAnswer(
+      { type: isMulti ? "MULTIPLE_CHOICE" : "SINGLE_CHOICE", answer: correctAnswerRaw },
+      optionStr,
+      parsedOptions
     );
-    const isThisCorrect = corrects.includes(optionStr.toLowerCase());
     if (isThisCorrect) return <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />;
     const userStr =
       typeof userAnswers[currentQ.id] === "string"
-        ? (userAnswers[currentQ.id] as string).toLowerCase()
+        ? (userAnswers[currentQ.id] as string)
         : (Array.isArray(userAnswers[currentQ.id])
-            ? (userAnswers[currentQ.id] as string[]).map((s) => s.toLowerCase())
+            ? (userAnswers[currentQ.id] as string[])
             : []);
     const isThisSelected = Array.isArray(userStr)
-      ? userStr.includes(optionStr.toLowerCase())
-      : userStr === optionStr.toLowerCase();
+      ? userStr.some((s) => isCorrectAnswer({ type: "SINGLE_CHOICE", answer: s }, optionStr, parsedOptions))
+      : isCorrectAnswer({ type: "SINGLE_CHOICE", answer: userStr }, optionStr, parsedOptions);
     if (isThisSelected && !isThisCorrect)
       return <XCircle className="w-5 h-5 text-red-400 shrink-0" />;
     return null;

@@ -14,6 +14,8 @@ export interface QuestionSetItem {
   code: string;
   title: string;
   description: string | null;
+  subject?: string;
+  semester?: string;
   isPublished: boolean;
   updatedAt: Date | string;
   _count?: {
@@ -68,7 +70,7 @@ export function SetsTable({ initialSets, initialQuery = "" }: SetsTableProps) {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input
               type="text"
-              placeholder="Tìm kiếm theo mã đề hoặc tên đề..."
+              placeholder="Tìm kiếm mã đề, tên đề, môn học, kỳ..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 bg-white"
@@ -118,7 +120,9 @@ export function SetsTable({ initialSets, initialQuery = "" }: SetsTableProps) {
                 <tr>
                   <th scope="col" className="px-6 py-3.5">Mã đề</th>
                   <th scope="col" className="px-6 py-3.5">Tên đề</th>
-                  <th scope="col" className="px-6 py-3.5">Số câu hỏi</th>
+                  <th scope="col" className="px-6 py-3.5">Môn học</th>
+                  <th scope="col" className="px-6 py-3.5">Kỳ học</th>
+                  <th scope="col" className="px-6 py-3.5">Số câu</th>
                   <th scope="col" className="px-6 py-3.5">Trạng thái</th>
                   <th scope="col" className="px-6 py-3.5">Cập nhật</th>
                   <th scope="col" className="px-6 py-3.5 text-right">Thao tác</th>
@@ -140,7 +144,17 @@ export function SetsTable({ initialSets, initialQuery = "" }: SetsTableProps) {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 font-medium text-slate-700">
+                    <td className="px-6 py-4 font-medium text-slate-700 whitespace-nowrap">
+                      <span className="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-xs font-medium">
+                        {set.subject || "Chưa xếp"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-xs whitespace-nowrap">
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${set.semester && set.semester !== "Chưa xếp" ? "bg-indigo-50 text-indigo-700 border border-indigo-100" : "bg-slate-100 text-slate-500"}`}>
+                        {set.semester || "Chưa xếp"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 font-medium text-slate-700 whitespace-nowrap">
                       {set._count?.questions ?? 0} câu
                     </td>
                     <td className="px-6 py-4">
@@ -150,7 +164,7 @@ export function SetsTable({ initialSets, initialQuery = "" }: SetsTableProps) {
                         <Badge variant="neutral">Bản nháp</Badge>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-xs text-slate-500 whitespace-nowrap">
+                    <td className="px-6 py-4 text-xs text-slate-500 whitespace-nowrap" suppressHydrationWarning>
                       {formatDate(set.updatedAt)}
                     </td>
                     <td className="px-6 py-4 text-right whitespace-nowrap">

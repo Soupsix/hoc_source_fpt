@@ -42,6 +42,16 @@ export function PublicSetCard({ set }: PublicSetCardProps) {
           )}
         </div>
 
+        {/* Subject & Semester badges */}
+        <div className="flex items-center gap-1.5 flex-wrap text-xs pt-1">
+          <span className="inline-block px-2 py-0.5 rounded bg-slate-100 font-semibold text-slate-700">
+            Môn: {set.subject || "Chưa xếp"}
+          </span>
+          <span className={`inline-block px-2 py-0.5 rounded font-semibold ${set.semester && set.semester !== "Chưa xếp" ? "bg-indigo-50 text-indigo-700 border border-indigo-100" : "bg-slate-100 text-slate-500"}`}>
+            {set.semester || "Chưa xếp"}
+          </span>
+        </div>
+
         <div>
           <h3 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-snug">
             <Link href={`/sets/${set.code}`}>
@@ -57,11 +67,12 @@ export function PublicSetCard({ set }: PublicSetCardProps) {
 
       {/* Card Footer Actions & Date */}
       <div className="px-5 sm:px-6 py-4 bg-slate-50/60 border-t border-slate-100 flex flex-col gap-3">
-        <div className="flex items-center gap-1.5 text-xs text-slate-500">
-          <Calendar className="w-3.5 h-3.5 text-slate-400" />
-          <span>Cập nhật: {formatDate(set.updatedAt)}</span>
+        <div className="flex items-center gap-4 text-xs font-semibold text-slate-500 pt-1">
+          <div className="flex items-center gap-1.5" suppressHydrationWarning>
+            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+            <span suppressHydrationWarning>Cập nhật: {formatDate(set.updatedAt)}</span>
+          </div>
         </div>
-
         <div className="grid grid-cols-2 gap-2 pt-1">
           <Link href={`/sets/${set.code}`} className="w-full">
             <button

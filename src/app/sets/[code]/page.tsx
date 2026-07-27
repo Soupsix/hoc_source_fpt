@@ -19,7 +19,7 @@ export default async function PublicSetDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const set = res.data;
+  const set = res.data as typeof res.data & { subject?: string; semester?: string };
   const questionCount = set._count?.questions ?? 0;
   const hasQuestions = questionCount > 0;
 
@@ -49,9 +49,17 @@ export default async function PublicSetDetailPage({ params }: PageProps) {
           {/* Set Header Card */}
           <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-xs space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="font-mono text-base font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-lg tracking-wider">
-                {set.code}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-mono text-base font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-lg tracking-wider">
+                  {set.code}
+                </span>
+                <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700">
+                  Môn: {set.subject || "Chưa xếp"}
+                </span>
+                <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${set.semester && set.semester !== "Chưa xếp" ? "bg-indigo-50 text-indigo-700 border border-indigo-100" : "bg-slate-100 text-slate-500"}`}>
+                  {set.semester || "Chưa xếp"}
+                </span>
+              </div>
 
               {hasQuestions ? (
                 <Badge variant="info" className="gap-1.5 py-1 px-3 text-xs">
@@ -72,7 +80,7 @@ export default async function PublicSetDetailPage({ params }: PageProps) {
               </h1>
               <div className="flex items-center gap-2 text-xs text-slate-500 pt-1">
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                <span>Cập nhật ngày {formatDate(set.updatedAt)}</span>
+                <span suppressHydrationWarning>Cập nhật ngày {formatDate(set.updatedAt)}</span>
               </div>
             </div>
 

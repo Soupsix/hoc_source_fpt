@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SetDetailActions } from "@/components/admin/SetDetailActions";
 import { AdminQuestionsList, QuestionListItem } from "@/components/admin/AdminQuestionsList";
-import { formatOptionText } from "@/lib/utils";
+import { formatOptionText, formatDate } from "@/lib/utils";
 import { ArrowLeft, Calendar, HelpCircle, Layers } from "lucide-react";
 
 interface PageProps {
@@ -22,18 +22,8 @@ export default async function SetDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const set = res.data;
+  const set = res.data as typeof res.data & { subject?: string; semester?: string };
   const questionsCount = set._count?.questions ?? 0;
-
-  const formatDate = (dateInput: Date | string) => {
-    return new Date(dateInput).toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
 
   const formattedQuestions: QuestionListItem[] = (set.questions || []).map((q) => ({
     id: q.id,
@@ -46,7 +36,7 @@ export default async function SetDetailPage({ params }: PageProps) {
   }));
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 max-w-5xl mx-auto" suppressHydrationWarning>
       {/* Top Header Navigation */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -58,9 +48,15 @@ export default async function SetDetailPage({ params }: PageProps) {
             <span className="sr-only">Quay lại</span>
           </Link>
           <div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <span className="font-mono text-xl font-bold text-indigo-600">
                 {set.code}
+              </span>
+              <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                Môn: {set.subject || "Chưa xếp"}
+              </span>
+              <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                {set.semester || "Chưa xếp"}
               </span>
               {set.isPublished ? (
                 <Badge variant="success">Đã xuất bản</Badge>
@@ -98,7 +94,7 @@ export default async function SetDetailPage({ params }: PageProps) {
             </div>
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase">Ngày tạo</p>
-              <p className="text-sm font-semibold text-slate-900">{formatDate(set.createdAt)}</p>
+              <p className="text-sm font-semibold text-slate-900" suppressHydrationWarning>{formatDate(set.createdAt)}</p>
             </div>
           </CardContent>
         </Card>
@@ -110,7 +106,7 @@ export default async function SetDetailPage({ params }: PageProps) {
             </div>
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase">Ngày cập nhật</p>
-              <p className="text-sm font-semibold text-slate-900">{formatDate(set.updatedAt)}</p>
+              <p className="text-sm font-semibold text-slate-900" suppressHydrationWarning>{formatDate(set.updatedAt)}</p>
             </div>
           </CardContent>
         </Card>

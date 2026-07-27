@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { formatOptionText, parseOptionsArray } from "@/lib/utils";
+import { formatOptionText, parseOptionsArray, resolveAnswer, isCorrectAnswer } from "@/lib/utils";
 import {
   ArrowLeft,
   Clock,
@@ -31,73 +31,6 @@ interface QuizAppProps {
     title: string;
   };
   questions: QuestionItem[];
-}
-
-// Normalise an answer string/letter to the display text of one of the options.
-// If the answer is a single letter like "A" or "B" it maps to the corresponding
-// option string. Otherwise the raw answer string is used as-is for comparison.
-function resolveAnswer(raw: string, options: string[]): string {
-  const t = raw.trim();
-  
-  if (t.length === 1) {
-    const idx = t.toUpperCase().charCodeAt(0) - 65; // A→0, B→1 …
-    if (idx >= 0 && idx < options.length) {
-      return formatOptionText(options[idx]);
-    }
-  }
-  
-  // Exact match first
-  const exactMatch = options.find(o => formatOptionText(o).trim().toLowerCase() === t.toLowerCase());
-  if (exactMatch) return formatOptionText(exactMatch);
-  
-  // Try stripping prefix like "A. ", "B) ", "C - " from the raw answer
-  const prefixMatch = t.match(/^[A-Z][.\-:)\]]\s+(.*)/i);
-  const strippedRaw = prefixMatch ? prefixMatch[1].trim().toLowerCase() : t.toLowerCase();
-  
-  // Try loose match against options (with or without option prefix)
-  const looseMatch = options.find(o => {
-    const optText = formatOptionText(o).trim().toLowerCase();
-    const strippedOptText = optText.match(/^[A-Z][.\-:)\]]\s+(.*)/i)?.[1].trim() || optText;
-    return strippedOptText === strippedRaw || optText === strippedRaw || strippedOptText === t.toLowerCase();
-  });
-  
-  if (looseMatch) return formatOptionText(looseMatch);
-
-  return t;
-}
-
-function isCorrect(
-  q: QuestionItem,
-  userAns: string | string[] | undefined,
-  options: string[]
-): boolean {
-  if (userAns === undefined) return false;
-
-  if (q.type === "MULTIPLE_CHOICE") {
-    // Answer stored as "A, B" or "Đáp án A, Đáp án B" etc.
-    const rawParts = formatOptionText(q.answer)
-      .split(",")
-      .map((s) => s.trim());
-    const correctTexts = rawParts.map((part) =>
-      resolveAnswer(part, options).toLowerCase()
-    );
-    const userTexts = (Array.isArray(userAns) ? userAns : [userAns]).map(
-      (s) => s.trim().toLowerCase()
-    );
-    return (
-      correctTexts.length === userTexts.length &&
-      correctTexts.every((c) => userTexts.includes(c))
-    );
-  }
-
-  // SINGLE_CHOICE or FLASHCARD
-  const correctText = resolveAnswer(
-    formatOptionText(q.answer),
-    options
-  ).toLowerCase();
-  const userText =
-    typeof userAns === "string" ? userAns.trim().toLowerCase() : "";
-  return correctText === userText;
 }
 
 export function QuizApp({ setInfo, questions }: QuizAppProps) {
@@ -197,7 +130,7 @@ export function QuizApp({ setInfo, questions }: QuizAppProps) {
   // ── Score ─────────────────────────────────────────────────────────────────
 
   const correctCount = activeQuestions.filter((q) =>
-    isCorrect(q, userAnswers[q.id], parseOptionsArray(q.options))
+    isCorrectAnswer(q, userAnswers[q.id], parseOptionsArray(q.options))
   ).length;
   const accuracy = Math.round((correctCount / activeQuestions.length) * 100);
 
@@ -207,17 +140,19 @@ export function QuizApp({ setInfo, questions }: QuizAppProps) {
     if (!isCurrentConfirmed) return null;
 
     const qOptions = parsedOptions;
-    const correctResolved = formatOptionText(currentQ.answer)
-      .split(",")
-      .map((p) => resolveAnswer(p.trim(), qOptions).toLowerCase());
-
-    const isThisCorrect = correctResolved.includes(optionStr.toLowerCase());
+    const isThisCorrect = isCorrectAnswer(
+      { type: "SINGLE_CHOICE", answer: currentQ.answer },
+      optionStr,
+      qOptions
+    );
 
     if (currentQ.type === "MULTIPLE_CHOICE") {
       const selected = Array.isArray(userAnswers[currentQ.id])
-        ? (userAnswers[currentQ.id] as string[]).map((s) => s.toLowerCase())
+        ? (userAnswers[currentQ.id] as string[])
         : [];
-      const isThisSelected = selected.includes(optionStr.toLowerCase());
+      const isThisSelected = selected.some((s) =>
+        isCorrectAnswer({ type: "SINGLE_CHOICE", answer: s }, optionStr, qOptions)
+      );
 
       if (isThisCorrect && isThisSelected)
         return <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />;
@@ -231,9 +166,13 @@ export function QuizApp({ setInfo, questions }: QuizAppProps) {
     // SINGLE_CHOICE
     const userSelected =
       typeof userAnswers[currentQ.id] === "string"
-        ? (userAnswers[currentQ.id] as string).toLowerCase()
+        ? (userAnswers[currentQ.id] as string)
         : "";
-    const isThisSelected = userSelected === optionStr.toLowerCase();
+    const isThisSelected = isCorrectAnswer(
+      { type: "SINGLE_CHOICE", answer: userSelected },
+      optionStr,
+      qOptions
+    );
 
     if (isThisCorrect) return <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />;
     if (isThisSelected && !isThisCorrect) return <XCircle className="w-5 h-5 text-red-400 shrink-0" />;
@@ -530,7 +469,7 @@ export function QuizApp({ setInfo, questions }: QuizAppProps) {
               <div className="space-y-3">
                 {activeQuestions.map((q, idx) => {
                   const qOptions = parseOptionsArray(q.options);
-                  const right = isCorrect(q, userAnswers[q.id], qOptions);
+                  const right = isCorrectAnswer(q, userAnswers[q.id], qOptions);
                   const uAns = userAnswers[q.id];
                   const answerDisplay = Array.isArray(uAns)
                     ? uAns.join(", ")

@@ -17,6 +17,8 @@ interface SetFormProps {
     code: string;
     title: string;
     description: string | null;
+    subject?: string | null;
+    semester?: string | null;
     isPublished: boolean;
   };
 }
@@ -39,6 +41,8 @@ export function SetForm({ initialData }: SetFormProps) {
       code: initialData?.code || "",
       title: initialData?.title || "",
       description: initialData?.description || "",
+      subject: initialData?.subject || "Chưa xếp",
+      semester: initialData?.semester || "Chưa xếp",
       isPublished: initialData?.isPublished ?? false,
     },
   });
@@ -52,6 +56,8 @@ export function SetForm({ initialData }: SetFormProps) {
       code: values.code.trim().toUpperCase(),
       title: values.title.trim(),
       description: values.description ? values.description.trim() : "",
+      subject: values.subject && values.subject.trim() ? values.subject.trim() : "Chưa xếp",
+      semester: values.semester && values.semester.trim() ? values.semester.trim() : "Chưa xếp",
       isPublished: Boolean(values.isPublished),
     };
 
@@ -120,6 +126,43 @@ export function SetForm({ initialData }: SetFormProps) {
         helperText="Tối đa 150 ký tự."
         {...register("title")}
       />
+
+      {/* Subject & Semester */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Input
+          label="Môn học"
+          placeholder="Ví dụ: PRN231, SWP391..."
+          error={errors.subject?.message}
+          helperText="Tên/Mã môn học (để trống sẽ tự xếp vào 'Chưa xếp')."
+          {...register("subject")}
+        />
+
+        <div>
+          <label htmlFor="semester" className="text-sm font-medium text-slate-700 block mb-1.5">
+            Kỳ học
+          </label>
+          <select
+            id="semester"
+            className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+            {...register("semester")}
+          >
+            <option value="Chưa xếp">Chưa xếp</option>
+            <option value="Kỳ 1">Kỳ 1</option>
+            <option value="Kỳ 2">Kỳ 2</option>
+            <option value="Kỳ 3">Kỳ 3</option>
+            <option value="Kỳ 4">Kỳ 4</option>
+            <option value="Kỳ 5">Kỳ 5</option>
+            <option value="Kỳ 6">Kỳ 6</option>
+            <option value="Kỳ 7">Kỳ 7</option>
+            <option value="Kỳ 8">Kỳ 8</option>
+            <option value="Kỳ 9">Kỳ 9</option>
+          </select>
+          {errors.semester?.message && (
+            <p className="mt-1 text-xs text-red-600">{errors.semester.message}</p>
+          )}
+          <p className="mt-1 text-xs text-slate-500">Phân loại theo kỳ học (Nếu môn không có kỳ thì chọn &quot;Chưa xếp&quot;).</p>
+        </div>
+      </div>
 
       {/* Description */}
       <Textarea
