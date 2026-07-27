@@ -37,14 +37,21 @@ interface QuizAppProps {
 // If the answer is a single letter like "A" or "B" it maps to the corresponding
 // option string. Otherwise the raw answer string is used as-is for comparison.
 function resolveAnswer(raw: string, options: string[]): string {
-  const trimmed = raw.trim();
-  if (trimmed.length === 1) {
-    const idx = trimmed.toUpperCase().charCodeAt(0) - 65; // A→0, B→1 …
+  let t = raw.trim();
+  if (t.length === 1) {
+    const idx = t.toUpperCase().charCodeAt(0) - 65; // A→0, B→1 …
     if (idx >= 0 && idx < options.length) {
       return formatOptionText(options[idx]);
     }
   }
-  return trimmed;
+  
+  // Strip prefixes like "A. ", "B) ", "C - "
+  const prefixMatch = t.match(/^[A-Z][.\-:)\]]\s+(.*)/i);
+  if (prefixMatch) {
+    t = prefixMatch[1].trim();
+  }
+  
+  return t;
 }
 
 function isCorrect(

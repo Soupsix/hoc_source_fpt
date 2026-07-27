@@ -33,12 +33,20 @@ interface FlashcardStudyAppProps {
 }
 
 // Resolve answer letter "A" → actual option text
+// Also handles answers like "A. some text" by stripping the prefix
 function resolveAnswer(raw: string, options: string[]): string {
-  const t = raw.trim();
+  let t = raw.trim();
   if (t.length === 1) {
     const idx = t.toUpperCase().charCodeAt(0) - 65;
     if (idx >= 0 && idx < options.length) return formatOptionText(options[idx]);
   }
+  
+  // Strip prefixes like "A. ", "B) ", "C - "
+  const prefixMatch = t.match(/^[A-Z][.\-:)\]]\s+(.*)/i);
+  if (prefixMatch) {
+    t = prefixMatch[1].trim();
+  }
+  
   return t;
 }
 
