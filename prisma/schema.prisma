@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum QuestionType {
+  FLASHCARD
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+}
+
+model QuestionSet {
+  id          String     @id @default(cuid())
+  code        String     @unique
+  title       String
+  description String?
+  isPublished Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  questions   Question[]
+
+  @@index([code])
+}
+
+model Question {
+  id          String       @id @default(cuid())
+  setId       String
+  type        QuestionType @default(FLASHCARD)
+  question    String       @db.Text
+  answer      String       @db.Text
+  options     Json?
+  explanation String?      @db.Text
+  order       Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  set         QuestionSet  @relation(fields: [setId], references: [id], onDelete: Cascade)
+
+  @@index([setId])
+  @@index([setId, order])
+}
