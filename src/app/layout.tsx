@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { DonateButton } from "@/components/DonateButton";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin", "vietnamese"] });
@@ -19,6 +20,7 @@ export default function RootLayout({
     <html lang="vi" className="h-full bg-slate-50 text-slate-900 antialiased" suppressHydrationWarning>
       <body className={`${inter.className} min-h-full flex flex-col`} suppressHydrationWarning>
         {children}
+        <DonateButton />
         <Analytics />
       </body>
     </html>
