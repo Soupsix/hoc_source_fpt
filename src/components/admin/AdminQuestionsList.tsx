@@ -233,22 +233,26 @@ export function AdminQuestionsList({ setId, questions }: AdminQuestionsListProps
       )}
 
       {/* Add / Edit Question Dialog */}
-      <QuestionFormDialog
-        setId={setId}
-        isOpen={isAddOpen}
-        onClose={() => {
-          setIsAddOpen(false);
-          setEditingQuestion(null);
-        }}
-        initialData={editingQuestion}
-      />
+      {isAddOpen && (
+        <QuestionFormDialog
+          setId={setId}
+          isOpen={true}
+          onClose={() => {
+            setIsAddOpen(false);
+            setEditingQuestion(null);
+          }}
+          initialData={editingQuestion}
+        />
+      )}
 
       {/* Import Questions Dialog */}
-      <ImportQuestionsDialog
-        setId={setId}
-        isOpen={isImportOpen}
-        onClose={() => setIsImportOpen(false)}
-      />
+      {isImportOpen && (
+        <ImportQuestionsDialog
+          setId={setId}
+          isOpen={true}
+          onClose={() => setIsImportOpen(false)}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog

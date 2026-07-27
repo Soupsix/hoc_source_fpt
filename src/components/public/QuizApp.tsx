@@ -37,7 +37,8 @@ interface QuizAppProps {
 // If the answer is a single letter like "A" or "B" it maps to the corresponding
 // option string. Otherwise the raw answer string is used as-is for comparison.
 function resolveAnswer(raw: string, options: string[]): string {
-  let t = raw.trim();
+  const t = raw.trim();
+  
   if (t.length === 1) {
     const idx = t.toUpperCase().charCodeAt(0) - 65; // A→0, B→1 …
     if (idx >= 0 && idx < options.length) {
@@ -45,12 +46,23 @@ function resolveAnswer(raw: string, options: string[]): string {
     }
   }
   
-  // Strip prefixes like "A. ", "B) ", "C - "
-  const prefixMatch = t.match(/^[A-Z][.\-:)\]]\s+(.*)/i);
-  if (prefixMatch) {
-    t = prefixMatch[1].trim();
-  }
+  // Exact match first
+  const exactMatch = options.find(o => formatOptionText(o).trim().toLowerCase() === t.toLowerCase());
+  if (exactMatch) return formatOptionText(exactMatch);
   
+  // Try stripping prefix like "A. ", "B) ", "C - " from the raw answer
+  const prefixMatch = t.match(/^[A-Z][.\-:)\]]\s+(.*)/i);
+  const strippedRaw = prefixMatch ? prefixMatch[1].trim().toLowerCase() : t.toLowerCase();
+  
+  // Try loose match against options (with or without option prefix)
+  const looseMatch = options.find(o => {
+    const optText = formatOptionText(o).trim().toLowerCase();
+    const strippedOptText = optText.match(/^[A-Z][.\-:)\]]\s+(.*)/i)?.[1].trim() || optText;
+    return strippedOptText === strippedRaw || optText === strippedRaw || strippedOptText === t.toLowerCase();
+  });
+  
+  if (looseMatch) return formatOptionText(looseMatch);
+
   return t;
 }
 
