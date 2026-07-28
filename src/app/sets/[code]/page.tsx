@@ -93,15 +93,26 @@ export default async function PublicSetDetailPage({ params }: PageProps) {
             {/* Action buttons */}
             <div className="pt-2 flex flex-col sm:flex-row gap-3">
               {hasQuestions ? (
-                <Link href={`/sets/${set.code}/learn`} className="flex-1">
-                  <button
-                    type="button"
-                    className="w-full py-3 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm sm:text-base shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Play className="w-5 h-5 fill-current" />
-                    <span>Bắt đầu học Flashcard</span>
-                  </button>
-                </Link>
+                <>
+                  <Link href={`/sets/${set.code}/learn`} className="flex-1">
+                    <button
+                      type="button"
+                      className="w-full py-3 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm sm:text-base shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Play className="w-5 h-5 fill-current" />
+                      <span>Bắt đầu học Flashcard</span>
+                    </button>
+                  </Link>
+                  <Link href={`/sets/${set.code}/quiz`} className="flex-1">
+                    <button
+                      type="button"
+                      className="w-full py-3 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm sm:text-base shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
+                    >
+                      <HelpCircle className="w-5 h-5" />
+                      <span>Thi trắc nghiệm</span>
+                    </button>
+                  </Link>
+                </>
               ) : (
                 <button
                   type="button"

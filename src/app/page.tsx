@@ -199,7 +199,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-6 mt-12 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4">
-          <p>Web của soupsix mới học đến kỳ 8 nên chỉ có chừng này source thôi, thông cảm :#</p>
+          <p>Web của Soupsix depzai mới học đến kỳ 8 nên chỉ có chừng này source thôi, thông cảm :#</p>
         </div>
       </footer>
     </div>

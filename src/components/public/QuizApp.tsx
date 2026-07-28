@@ -14,6 +14,7 @@ import {
   Square,
   BookOpen,
   BookOpenCheck,
+  Play,
 } from "lucide-react";
 
 interface QuestionItem {
@@ -42,6 +43,7 @@ export function QuizApp({ setInfo, questions }: QuizAppProps) {
     Record<string, string | string[]>
   >({});
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
   // Per-question: whether user has confirmed their answer
   const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set());
 
@@ -49,12 +51,12 @@ export function QuizApp({ setInfo, questions }: QuizAppProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
-    if (isSubmitted || activeQuestions.length === 0) return;
+    if (!hasStarted || isSubmitted || activeQuestions.length === 0) return;
     const interval = setInterval(() => {
       setElapsedSeconds((prev) => prev + 1);
     }, 1000);
     return () => clearInterval(interval);
-  }, [isSubmitted, activeQuestions.length]);
+  }, [hasStarted, isSubmitted, activeQuestions.length]);
 
   if (activeQuestions.length === 0) {
     return (
@@ -70,6 +72,56 @@ export function QuizApp({ setInfo, questions }: QuizAppProps) {
         >
           Quay lại mã đề
         </Link>
+      </div>
+    );
+  }
+
+  if (!hasStarted) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-4 text-center selection:bg-indigo-500 selection:text-white">
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-12 max-w-lg w-full shadow-2xl space-y-6">
+          <div className="w-16 h-16 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto text-indigo-400">
+            <BookOpenCheck className="w-8 h-8" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-extrabold text-white">Kiểm tra trắc nghiệm</h2>
+            <p className="text-slate-400 text-sm mt-3 font-mono bg-slate-950 inline-block px-3 py-1 rounded-lg border border-slate-800">
+              Mã đề: {setInfo.code}
+            </p>
+          </div>
+          
+          <div className="space-y-3 pt-4">
+            <button
+              onClick={() => setHasStarted(true)}
+              className="w-full py-3.5 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-colors flex items-center justify-center gap-2"
+            >
+              <Play className="w-5 h-5 fill-current" />
+              Bắt đầu thi (Thứ tự gốc)
+            </button>
+            <button
+              onClick={() => {
+                const shuffled = [...questions].sort(() => Math.random() - 0.5);
+                setActiveQuestions(shuffled);
+                setCurrentIndex(0);
+                setUserAnswers({});
+                setConfirmedIds(new Set());
+                setIsSubmitted(false);
+                setElapsedSeconds(0);
+                setHasStarted(true);
+              }}
+              className="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-colors flex items-center justify-center gap-2"
+            >
+              <RotateCcw className="w-5 h-5" />
+              Bắt đầu thi (Trộn câu hỏi)
+            </button>
+          </div>
+          <Link
+            href={`/sets/${setInfo.code}`}
+            className="inline-block mt-4 text-sm text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            Quay lại thư viện
+          </Link>
+        </div>
       </div>
     );
   }
