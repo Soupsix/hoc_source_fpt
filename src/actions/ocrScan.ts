@@ -4,7 +4,6 @@ import { execFile } from "child_process";
 import path from "path";
 import fs from "fs/promises";
 import { verifyAdminSession } from "@/lib/auth";
-import { GoogleGenAI } from "@google/genai";
 
 export interface OCRQuestionResult {
   question: string;
@@ -15,14 +14,15 @@ export interface OCRQuestionResult {
 }
 
 /**
- * Sử dụng AI Gemini 2.0 Flash hiệu đính chính tả, thêm dấu tiếng Việt chuẩn cho câu hỏi OCR
+ * Sử dụng LLM OpenRouter hiệu đính chính tả, thêm dấu tiếng Việt chuẩn cho câu hỏi OCR
  */
-async function polishQuestionsWithGemini(questions: OCRQuestionResult[]): Promise<OCRQuestionResult[]> {
-  const apiKey = process.env.GEMINI_API_KEY;
+async function polishQuestionsWithOpenRouter(questions: OCRQuestionResult[]): Promise<OCRQuestionResult[]> {
+  const apiKey = process.env.OPEN_ROUTER_API_KEY;
+  const model = process.env.OPEN_ROUTER_MODEL || "google/gemini-2.5-flash";
+
   if (!apiKey || questions.length === 0) return questions;
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
     const prompt = `
 Bạn là một chuyên gia biên tập đề thi tiếng Việt hàng đầu.
 Dưới đây là mảng câu hỏi trắc nghiệm thu được từ nhận diện hình ảnh OCR (VietOCR), nên có thể chứa lỗi thiếu dấu, gõ sai từ hoặc ký tự nhiễu (ví dụ: 'nào2' -> 'nào?', 'Chù nghía' -> 'Chủ nghĩa', 'trông nông' -> 'trọng nông', 'lính vc' -> 'lĩnh vực', 'tiền tê' -> 'tiền tệ').
@@ -37,22 +37,48 @@ Dữ liệu OCR đầu vào:
 ${JSON.stringify(questions, null, 2)}
 `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:3000",
+        "X-Title": "Learning_Source",
       },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 2000,
+      }),
     });
 
-    if (response.text) {
-      const polished: OCRQuestionResult[] = JSON.parse(response.text);
-      if (Array.isArray(polished) && polished.length === questions.length) {
-        return polished;
+    if (!response.ok) {
+      const errText = await response.text();
+      console.warn("⚠️ OpenRouter API Error:", response.status, errText);
+      return questions;
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (content) {
+      const jsonMatch = content.match(/\[[\s\S]*\]/) || content.match(/\{[\s\S]*\}/);
+      const rawText = jsonMatch ? jsonMatch[0] : content;
+      const parsed = JSON.parse(rawText);
+      const polishedArray = Array.isArray(parsed) ? parsed : (parsed.questions || parsed.data);
+
+      if (Array.isArray(polishedArray) && polishedArray.length === questions.length) {
+        return polishedArray;
       }
     }
   } catch (err) {
-    console.warn("⚠️ Gemini AI Auto-Polish gặp sự cố (fallback về dữ liệu gốc):", err);
+    console.warn("⚠️ OpenRouter AI Auto-Polish gặp sự cố (fallback về dữ liệu gốc):", err);
   }
 
   return questions;
@@ -117,8 +143,8 @@ export async function scanImageOCRAction(formData: FormData): Promise<{
 
             const rawQuestions: OCRQuestionResult[] = parsed.questions || [];
 
-            // Tự động sử dụng Gemini AI hiệu đính chuẩn câu chữ tiếng Việt
-            const polishedQuestions = await polishQuestionsWithGemini(rawQuestions);
+            // Tự động sử dụng OpenRouter LLM hiệu đính chuẩn câu chữ tiếng Việt
+            const polishedQuestions = await polishQuestionsWithOpenRouter(rawQuestions);
 
             resolve({
               success: true,

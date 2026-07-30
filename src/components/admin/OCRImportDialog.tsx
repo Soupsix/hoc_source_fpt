@@ -553,19 +553,42 @@ export function OCRImportDialog({
                   {q.type !== "FLASHCARD" && (
                     <div className="space-y-2">
                       <label className="block text-xs font-semibold text-slate-700">
-                        Danh sách phương án (Tích chọn ô tròn để đánh dấu đáp án đúng):
+                        {q.type === "MULTIPLE_CHOICE"
+                          ? "Danh sách phương án (Tích chọn ô vuông để chọn NHIỀU đáp án đúng):"
+                          : "Danh sách phương án (Tích chọn ô tròn để đánh dấu 1 đáp án đúng):"}
                       </label>
                       {q.options.map((opt, optIndex) => {
-                        const isSelected = q.answer === opt;
+                        const isMultiple = q.type === "MULTIPLE_CHOICE";
+                        const currentAnswers = isMultiple
+                          ? q.answer.split(/[,;]/).map((s) => s.trim()).filter(Boolean)
+                          : [q.answer.trim()];
+                        const isSelected = opt.trim() !== "" && currentAnswers.includes(opt.trim());
+
+                        const handleToggleAnswer = () => {
+                          if (isMultiple) {
+                            let updated: string[];
+                            if (isSelected) {
+                              updated = currentAnswers.filter((item) => item !== opt.trim());
+                            } else {
+                              updated = [...currentAnswers, opt.trim()];
+                            }
+                            handleUpdateQuestion(qIndex, "answer", updated.join(", "));
+                          } else {
+                            handleUpdateQuestion(qIndex, "answer", opt);
+                          }
+                        };
+
                         return (
                           <div key={optIndex} className="flex items-center gap-2">
                             <input
-                              type="radio"
-                              name={`correct-answer-${qIndex}`}
+                              type={isMultiple ? "checkbox" : "radio"}
+                              name={isMultiple ? `correct-answer-${qIndex}-${optIndex}` : `correct-answer-${qIndex}`}
                               checked={isSelected}
-                              onChange={() => handleUpdateQuestion(qIndex, "answer", opt)}
-                              className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 shrink-0 cursor-pointer"
-                              title="Tích chọn làm đáp án đúng"
+                              onChange={handleToggleAnswer}
+                              className={`w-4 h-4 text-indigo-600 focus:ring-indigo-500 shrink-0 cursor-pointer ${
+                                isMultiple ? "rounded" : ""
+                              }`}
+                              title={isMultiple ? "Tích chọn ô này làm 1 trong các đáp án đúng" : "Tích chọn làm đáp án đúng duy nhất"}
                             />
                             <input
                               type="text"
