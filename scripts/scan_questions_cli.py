@@ -116,9 +116,27 @@ def run_ocr_cli(img_path):
 
     h_img, w_img = img_bgr.shape[:2]
 
-    # PaddleOCR Text Detection
-    detector_ocr = PaddleOCR(lang='en')
-    det_results = detector_ocr.ocr(img_path)
+    # Auto-resize large images to max 1600px width/height for 3x faster detection
+    max_dim = 1600
+    if max(h_img, w_img) > max_dim:
+        scale = max_dim / float(max(h_img, w_img))
+        img_bgr = cv2.resize(img_bgr, (int(w_img * scale), int(h_img * scale)), interpolation=cv2.INTER_AREA)
+        h_img, w_img = img_bgr.shape[:2]
+
+    # Temporary resize save for PaddleOCR detection
+    temp_resized_path = img_path + "_resized.png"
+    cv2.imwrite(temp_resized_path, img_bgr)
+
+    try:
+        # PaddleOCR Text Detection
+        detector_ocr = PaddleOCR(lang='en')
+        det_results = detector_ocr.ocr(temp_resized_path)
+    finally:
+        if os.path.exists(temp_resized_path):
+            try:
+                os.remove(temp_resized_path)
+            except Exception:
+                pass
 
     boxes = []
     if det_results:
@@ -139,7 +157,7 @@ def run_ocr_cli(img_path):
     config['predictor']['beamsearch'] = False
     vietocr_predictor = Predictor(config)
 
-    recognized_lines = []
+    crop_pil_imgs = []
     for poly in boxes:
         pts = np.asarray(poly, dtype=np.int32)
         if pts.ndim >= 2:
@@ -163,11 +181,13 @@ def run_ocr_cli(img_path):
             continue
 
         crop_rgb = cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2RGB)
-        pil_img = Image.fromarray(crop_rgb)
+        crop_pil_imgs.append(Image.fromarray(crop_rgb))
 
-        text = vietocr_predictor.predict(pil_img)
-        if text and text.strip():
-            recognized_lines.append(text.strip())
+    # Fast Batch Prediction with VietOCR!
+    recognized_lines = []
+    if crop_pil_imgs:
+        batch_results = vietocr_predictor.predict_batch(crop_pil_imgs)
+        recognized_lines = [text.strip() for text in batch_results if text and text.strip()]
 
     parsed_questions = parse_lines_to_questions(recognized_lines)
     print(json.dumps({"success": True, "questions": parsed_questions}, ensure_ascii=False))
