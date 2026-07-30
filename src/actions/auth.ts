@@ -7,7 +7,7 @@ export async function loginAdminAction(accessCode: string) {
   try {
     const validated = adminLoginSchema.parse({ accessCode });
 
-    const serverAdminCode = process.env.ADMIN_ACCESS_CODE || "admin123";
+    const serverAdminCode = process.env.ADMIN_ACCESS_CODE;
 
     if (validated.accessCode !== serverAdminCode) {
       return { success: false, error: "Mã truy cập Admin không chính xác." };

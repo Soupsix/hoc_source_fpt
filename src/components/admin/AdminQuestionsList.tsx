@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { QuestionFormDialog, QuestionEditData } from "./QuestionFormDialog";
 import { ImportQuestionsDialog } from "./ImportQuestionsDialog";
+import { OCRImportDialog } from "./OCRImportDialog";
 import { deleteQuestionAction, moveQuestionOrderAction } from "@/actions/questions";
 import { parseOptionsArray, formatOptionText } from "@/lib/utils";
-import { Plus, Upload, Edit3, Trash2, ArrowUp, ArrowDown, HelpCircle } from "lucide-react";
+import { Plus, Upload, Edit3, Trash2, ArrowUp, ArrowDown, HelpCircle, Scan } from "lucide-react";
 
 export interface QuestionListItem {
   id: string;
@@ -31,6 +32,7 @@ export function AdminQuestionsList({ setId, questions }: AdminQuestionsListProps
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isOCROpen, setIsOCROpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<QuestionEditData | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -79,6 +81,16 @@ export function AdminQuestionsList({ setId, questions }: AdminQuestionsListProps
         </h3>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsOCROpen(true)}
+            className="gap-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50 font-semibold"
+          >
+            <Scan className="w-4 h-4" />
+            Scan Đề Thi (VietOCR)
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -251,6 +263,15 @@ export function AdminQuestionsList({ setId, questions }: AdminQuestionsListProps
           setId={setId}
           isOpen={true}
           onClose={() => setIsImportOpen(false)}
+        />
+      )}
+
+      {/* OCR Import Dialog */}
+      {isOCROpen && (
+        <OCRImportDialog
+          setId={setId}
+          isOpen={true}
+          onClose={() => setIsOCROpen(false)}
         />
       )}
 
