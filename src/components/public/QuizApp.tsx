@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { formatOptionText, parseOptionsArray, resolveAnswer, isCorrectAnswer } from "@/lib/utils";
+import { formatOptionText, parseOptionsArray, resolveAnswer, isCorrectAnswer, isOptionCorrect } from "@/lib/utils";
 import {
   ArrowLeft,
   Clock,
@@ -192,11 +192,7 @@ export function QuizApp({ setInfo, questions }: QuizAppProps) {
     if (!isCurrentConfirmed) return null;
 
     const qOptions = parsedOptions;
-    const isThisCorrect = isCorrectAnswer(
-      { type: "SINGLE_CHOICE", answer: currentQ.answer },
-      optionStr,
-      qOptions
-    );
+    const isThisCorrect = isOptionCorrect(currentQ, optionStr, qOptions);
 
     if (currentQ.type === "MULTIPLE_CHOICE") {
       const selected = Array.isArray(userAnswers[currentQ.id])

@@ -122,6 +122,75 @@ export function resolveAnswer(raw: string, options: string[]): string {
 }
 
 /**
+ * Extracts 0-based option indices for all correct options in a question.
+ */
+export function getCorrectOptionIndices(answerRaw: string, options: string[]): Set<number> {
+  const indices = new Set<number>();
+  if (!answerRaw) return indices;
+
+  const formattedOptions = options.map((o) => formatOptionText(o));
+  const rawFormatted = formatOptionText(answerRaw);
+  const cleanedRaw = cleanStr(rawFormatted);
+
+  if (formattedOptions.length > 0) {
+    formattedOptions.forEach((optStr, idx) => {
+      const cleanedOpt = cleanStr(optStr);
+      const strippedOpt = cleanStr(stripOptionPrefix(optStr));
+      const letter = String.fromCharCode(65 + idx).toLowerCase();
+
+      // Check 1: Does answerRaw contain exact letter/prefix boundary for this option? e.g. "A, C", "A; C", "A. ..., C. ..."
+      const letterRegex = new RegExp(`(?:^|[,;\\s\\(\\)\\[\\]])\\s*${letter}\\s*(?:[\\.:\\)\\-\\s,;]|$)`, "i");
+
+      // Check 2: Does cleanedRaw contain the stripped option text (e.g. "xây dựng cơ sở vật chất")?
+      const textMatches = strippedOpt.length >= 3 && cleanedRaw.includes(strippedOpt);
+
+      // Check 3: Does cleanedRaw exactly match cleanedOpt?
+      const exactMatches = cleanedRaw === cleanedOpt;
+
+      if (letterRegex.test(rawFormatted) || textMatches || exactMatches) {
+        indices.add(idx);
+      }
+    });
+  }
+
+  // Fallback if options array is empty or no index matched
+  if (indices.size === 0) {
+    const parts = rawFormatted.split(/(?:^|[,;])\s*(?=[A-Za-z][\.\:\)\-\s])/).filter(Boolean);
+    parts.forEach((p) => {
+      const resolved = resolveAnswer(p.trim(), formattedOptions);
+      const optIdx = formattedOptions.findIndex(
+        (o) => cleanStr(stripOptionPrefix(o)) === cleanStr(stripOptionPrefix(resolved))
+      );
+      if (optIdx !== -1) indices.add(optIdx);
+    });
+  }
+
+  return indices;
+}
+
+/**
+ * Helper to check if a specific option string is one of the correct answers for a question.
+ */
+export function isOptionCorrect(
+  q: { type?: string; answer: string },
+  optionStr: string,
+  options: string[]
+): boolean {
+  const formattedOptions = options.map((o) => formatOptionText(o));
+  if (q.type === "MULTIPLE_CHOICE") {
+    const correctIndices = getCorrectOptionIndices(q.answer, formattedOptions);
+    const optIdx = formattedOptions.findIndex(
+      (o) => cleanStr(stripOptionPrefix(o)) === cleanStr(stripOptionPrefix(formatOptionText(optionStr)))
+    );
+    if (optIdx !== -1) {
+      return correctIndices.has(optIdx);
+    }
+  }
+
+  return isCorrectAnswer({ type: "SINGLE_CHOICE", answer: q.answer }, optionStr, options);
+}
+
+/**
  * Checks if user answer matches question correct answer cleanly and robustly.
  */
 export function isCorrectAnswer(
@@ -131,42 +200,43 @@ export function isCorrectAnswer(
 ): boolean {
   if (userAns === undefined || userAns === null) return false;
 
-  const rawCorrect = formatOptionText(q.answer);
+  const formattedOptions = options.map((o) => formatOptionText(o));
 
   if (q.type === "MULTIPLE_CHOICE") {
-    const directOptionMatch = options.length > 0 ? options.find(o => cleanStr(stripOptionPrefix(formatOptionText(o))) === cleanStr(stripOptionPrefix(rawCorrect))) : undefined;
+    const correctIndices = getCorrectOptionIndices(q.answer, formattedOptions);
 
-    let correctParts: string[];
-    if (directOptionMatch) {
-      correctParts = [directOptionMatch];
-    } else {
-      correctParts = rawCorrect
-        .split(/[,;]/)
-        .map((p) => resolveAnswer(p.trim(), options))
-        .filter(Boolean);
-    }
+    const userAnswersArray = (Array.isArray(userAns) ? userAns : [userAns]).filter(Boolean);
+    const userIndices = new Set<number>();
 
-    const userParts = (Array.isArray(userAns) ? userAns : [userAns])
-      .map((u) => resolveAnswer(u, options))
-      .filter(Boolean);
+    userAnswersArray.forEach((u) => {
+      const userStr = formatOptionText(u);
+      const resolved = resolveAnswer(userStr, formattedOptions);
+      const idx = formattedOptions.findIndex(
+        (o) => cleanStr(stripOptionPrefix(o)) === cleanStr(stripOptionPrefix(resolved))
+      );
+      if (idx !== -1) {
+        userIndices.add(idx);
+      } else {
+        const letterIdx = extractOptionIndex(userStr, formattedOptions.length);
+        if (letterIdx !== null) userIndices.add(letterIdx);
+      }
+    });
 
-    if (correctParts.length === 0 || userParts.length === 0) return false;
+    if (correctIndices.size === 0 || userIndices.size === 0) return false;
+    if (correctIndices.size !== userIndices.size) return false;
 
-    const cleanedCorrect = new Set(correctParts.map((c) => cleanStr(stripOptionPrefix(c))));
-    const cleanedUser = new Set(userParts.map((u) => cleanStr(stripOptionPrefix(u))));
-
-    if (cleanedCorrect.size !== cleanedUser.size) return false;
-    for (const item of cleanedCorrect) {
-      if (!cleanedUser.has(item)) return false;
+    for (const idx of correctIndices) {
+      if (!userIndices.has(idx)) return false;
     }
     return true;
   }
 
   // SINGLE_CHOICE or FLASHCARD
   const userStr = Array.isArray(userAns) ? userAns[0] || "" : userAns;
+  const rawCorrect = formatOptionText(q.answer);
 
-  const resolvedCorrect = resolveAnswer(rawCorrect, options);
-  const resolvedUser = resolveAnswer(userStr, options);
+  const resolvedCorrect = resolveAnswer(rawCorrect, formattedOptions);
+  const resolvedUser = resolveAnswer(userStr, formattedOptions);
 
   const cleanedCorrect = cleanStr(stripOptionPrefix(resolvedCorrect));
   const cleanedUser = cleanStr(stripOptionPrefix(resolvedUser));
